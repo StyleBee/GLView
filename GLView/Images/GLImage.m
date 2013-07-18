@@ -540,8 +540,10 @@ static NSCache *imageCache = nil;
 - (void)bindTexture
 {
     glEnable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    glBlendFunc(self.premultipliedAlpha? GL_ONE: GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// FIX: disabled GL_BLEND here, because it does prevents usage of external blending options when drawing GLImage instance
+    // glEnable(GL_BLEND);
+    // glBlendFunc(self.premultipliedAlpha? GL_ONE: GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     glBindTexture(GL_TEXTURE_2D, self.texture);
 }
