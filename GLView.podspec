@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
                    DESC
   s.homepage      = "https://github.com/nicklockwood/GLView"
   s.author        = { "Nick Lockwood" => "support@charcoaldesign.co.uk" }
-  s.source        = { :git => "https://github.com/nicklockwood/GLView.git", :tag => "1.5.1" }
+  s.source        = { :git => "https://github.com/StyleBee/GLView.git", :tag => "1.5.1" }
   s.platform      = :ios
   s.source_files  = 'GLView/Core/', 'GLView/Images/', 'GLView/Models/'
   s.frameworks    = 'QuartzCore', 'OpenGLES'
