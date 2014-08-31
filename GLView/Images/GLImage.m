@@ -558,41 +558,44 @@ static NSCache *imageCache = nil;
 - (void)bindTexture
 {
     glEnable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    
-    GLenum source, dest;
-    switch (self.blendMode)
-    {
-        case GLBlendModeNormal:
-        {
-            source = GL_SRC_ALPHA;
-            dest = GL_ONE_MINUS_SRC_ALPHA;
-            break;
-        }
-        case GLBlendModeMultiply:
-        {
-            source = GL_DST_COLOR;
-            dest = GL_ONE_MINUS_SRC_ALPHA;
-            break;
-        }
-        case GLBlendModeAdd:
-        {
-            source = GL_SRC_ALPHA;
-            dest = GL_ONE;
-            break;
-        }
-        case GLBlendModeScreen:
-        {
-            source = GL_SRC_ALPHA;
-            dest = GL_ONE_MINUS_SRC_COLOR;
-            break;
-        }
-    }
-    if (source == GL_SRC_ALPHA && self.premultipliedAlpha)
-    {
-        source = GL_ONE;
-    }
-    glBlendFunc(source, dest);
+	
+	// FIX: disabled GL_BLEND here, because it doesn't support the custom blends we're using
+	
+    // glEnable(GL_BLEND);
+    //
+    // GLenum source, dest;
+    // switch (self.blendMode)
+    // {
+    //     case GLBlendModeNormal:
+    //     {
+    //         source = GL_SRC_ALPHA;
+    //         dest = GL_ONE_MINUS_SRC_ALPHA;
+    //         break;
+    //     }
+    //     case GLBlendModeMultiply:
+    //     {
+    //         source = GL_DST_COLOR;
+    //         dest = GL_ONE_MINUS_SRC_ALPHA;
+    //         break;
+    //     }
+    //     case GLBlendModeAdd:
+    //     {
+    //         source = GL_SRC_ALPHA;
+    //         dest = GL_ONE;
+    //         break;
+    //     }
+    //     case GLBlendModeScreen:
+    //     {
+    //         source = GL_SRC_ALPHA;
+    //         dest = GL_ONE_MINUS_SRC_COLOR;
+    //         break;
+    //     }
+    // }
+    // if (source == GL_SRC_ALPHA && self.premultipliedAlpha)
+    // {
+    //     source = GL_ONE;
+    // }
+    // glBlendFunc(source, dest);
     
     glBindTexture(GL_TEXTURE_2D, self.texture);
 }
