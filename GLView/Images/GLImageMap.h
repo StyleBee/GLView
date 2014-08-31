@@ -2,7 +2,7 @@
 //  GLImageMap.h
 //
 //  GLView Project
-//  Version 1.5.1
+//  Version 1.6.1
 //
 //  Created by Nick Lockwood on 04/06/2012.
 //  Copyright 2011 Charcoal Design
@@ -31,21 +31,32 @@
 //  3. This notice may not be removed or altered from any source distribution.
 //
 
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wobjc-missing-property-synthesis"
+
+
 #import "GLImage.h"
 #import "GLUtils.h"
 
 
-@interface GLImageMap : NSObject
+@interface GLImageMap : NSObject <NSFastEnumeration>
 
-+ (GLImageMap *)imageMapWithContentsOfFile:(NSString *)nameOrPath;
-+ (GLImageMap *)imageMapWithImage:(GLImage *)image data:(NSData *)data;
++ (instancetype)imageMapWithContentsOfFile:(NSString *)nameOrPath;
++ (instancetype)imageMapWithImage:(GLImage *)image data:(NSData *)data;
 
-- (GLImageMap *)initWithContentsOfFile:(NSString *)nameOrPath;
-- (GLImageMap *)initWithImage:(GLImage *)image data:(NSData *)data;
+- (instancetype)initWithContentsOfFile:(NSString *)nameOrPath;
+- (instancetype)initWithImage:(GLImage *)image data:(NSData *)data;
 
-- (NSInteger)imageCount;
-- (NSString *)imageNameAtIndex:(NSInteger)index;
-- (GLImage *)imageAtIndex:(NSInteger)index;
+- (NSUInteger)imageCount;
+- (NSString *)imageNameAtIndex:(NSUInteger)index;
+- (GLImage *)imageAtIndex:(NSUInteger)index;
 - (GLImage *)imageNamed:(NSString *)name;
 
+- (GLImage *)objectAtIndexedSubscript:(NSUInteger)index;
+- (GLImage *)objectForKeyedSubscript:(NSString *)name;
+
 @end
+
+
+#pragma GCC diagnostic pop

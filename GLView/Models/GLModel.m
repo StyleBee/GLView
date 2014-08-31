@@ -2,7 +2,7 @@
 //  GLModel.h
 //
 //  GLView Project
-//  Version 1.5.1
+//  Version 1.6.1
 //
 //  Created by Nick Lockwood on 10/07/2011.
 //  Copyright 2011 Charcoal Design
@@ -34,13 +34,21 @@
 #import "GLModel.h"
 
 
+#pragma GCC diagnostic ignored "-Wobjc-missing-property-synthesis"
+#pragma GCC diagnostic ignored "-Wdirect-ivar-access"
+#pragma GCC diagnostic ignored "-Wpointer-arith"
+#pragma GCC diagnostic ignored "-Wconversion"
+#pragma GCC diagnostic ignored "-Wgnu"
+
+
 typedef struct
 {
-    char fileIdentifier[30];
+    char fileIdentifier[32];
     unsigned int majorVersion;
     unsigned int minorVersion;
 }
 WWDC2010Header;
+
 
 typedef struct
 {
@@ -51,6 +59,7 @@ typedef struct
     unsigned int byteNormalOffset;
 }
 WWDC2010TOC;
+
 
 typedef struct
 {
@@ -142,7 +151,7 @@ WWDC2010Attributes;
     self.elementSize = elementAttributes->byteSize / elementAttributes->numElements;
     switch (self.elementSize) {
         case sizeof(GLuint):
-            self.elementType = GL_UNSIGNED_INT;
+            self.elementType = GL_UNSIGNED_INT_OES;
             break;
         case sizeof(GLushort):
             self.elementType = GL_UNSIGNED_SHORT;
@@ -316,7 +325,7 @@ WWDC2010Attributes;
     GLuint *faceIndices = (GLuint *)faceIndexData.bytes;
     if (self.elementCount > USHRT_MAX)
     {
-        self.elementType = GL_UNSIGNED_INT;
+        self.elementType = GL_UNSIGNED_INT_OES;
         self.elementSize = sizeof(GLuint);
         self.elements = malloc([faceIndexData length]);
         memcpy(self.elements, faceIndices, [faceIndexData length]);
@@ -400,14 +409,14 @@ static NSCache *modelCache = nil;
 #pragma mark -
 #pragma mark Loading
 
-+ (GLModel *)modelWithContentsOfFile:(NSString *)nameOrPath
++ (instancetype)modelWithContentsOfFile:(NSString *)nameOrPath
 {
-    return [[self alloc] initWithContentsOfFile:nameOrPath];
+    return [(GLModel *)[self alloc] initWithContentsOfFile:nameOrPath];
 }
 
-+ (GLModel *)modelWithData:(NSData *)data
++ (instancetype)modelWithData:(NSData *)data
 {
-    return [[self alloc] initWithData:data];
+    return [(GLModel *)[self alloc] initWithData:data];
 }
 
 - (GLModel *)initWithContentsOfFile:(NSString *)nameOrPath

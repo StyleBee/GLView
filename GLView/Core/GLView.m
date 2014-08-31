@@ -2,7 +2,7 @@
 //  GLView.m
 //
 //  GLView Project
-//  Version 1.5.1
+//  Version 1.6.1
 //
 //  Created by Nick Lockwood on 10/07/2011.
 //  Copyright 2011 Charcoal Design
@@ -32,6 +32,12 @@
 //
 
 #import "GLView.h"
+
+
+#pragma GCC diagnostic ignored "-Wobjc-missing-property-synthesis"
+#pragma GCC diagnostic ignored "-Wdirect-ivar-access"
+#pragma GCC diagnostic ignored "-Wconversion"
+#pragma GCC diagnostic ignored "-Wgnu"
 
 
 @interface GLLayer : CAEAGLLayer
@@ -70,8 +76,7 @@
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     //apply transform
-    CATransform3D transform = view.contentTransform;
-    glLoadMatrixf((GLfloat *)&transform);
+    GLLoadCATransform3D(view.contentTransform);
     
     //do drawing
     if (view.fov <= 0.0f)
@@ -115,7 +120,7 @@
     //create CGImage with the pixel data
     CGDataProviderRef dataProvider = CGDataProviderCreateWithData(NULL, data, dataLength, NULL);
     CGColorSpaceRef colorspace = CGColorSpaceCreateDeviceRGB();
-    CGImageRef image = CGImageCreate(width, height, 8, 32, width * 4, colorspace, kCGBitmapByteOrder32Big | kCGImageAlphaPremultipliedLast, dataProvider, NULL, true, kCGRenderingIntentDefault);
+    CGImageRef image = CGImageCreate(width, height, 8, 32, width * 4, colorspace, (CGBitmapInfo)(kCGBitmapByteOrder32Big | kCGImageAlphaPremultipliedLast), dataProvider, NULL, true, kCGRenderingIntentDefault);
     
     //render image in current context
     CGContextDrawImage(ctx, CGRectMake(0.0, 0.0, self.bounds.size.width, self.bounds.size.height), image);
@@ -235,7 +240,7 @@
 
 - (void)setFrameInterval:(NSTimeInterval)frameInterval
 {
-    if (_frameInterval != frameInterval)
+    if (ABS(_frameInterval - frameInterval) < 0.001)
     {
         _frameInterval = frameInterval;
         if (self.animating)
@@ -265,27 +270,27 @@
     [EAGLContext setCurrentContext:self.context];
     
     //create default framebuffer object
-    glGenFramebuffers(1, &_defaultFramebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, self.defaultFramebuffer);
+    glGenFramebuffersOES(1, &_defaultFramebuffer);
+    glBindFramebufferOES(GL_FRAMEBUFFER_OES, self.defaultFramebuffer);
     
     //set up color render buffer
-    glGenRenderbuffers(1, &_colorRenderbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, self.colorRenderbuffer);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, self.colorRenderbuffer);
-    [self.context renderbufferStorage:GL_RENDERBUFFER fromDrawable:(CAEAGLLayer *)self.layer];
-    glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &_framebufferWidth);
-    glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &_framebufferHeight);
+    glGenRenderbuffersOES(1, &_colorRenderbuffer);
+    glBindRenderbufferOES(GL_RENDERBUFFER_OES, self.colorRenderbuffer);
+    glFramebufferRenderbufferOES(GL_FRAMEBUFFER_OES, GL_COLOR_ATTACHMENT0_OES, GL_RENDERBUFFER_OES, self.colorRenderbuffer);
+    [self.context renderbufferStorage:GL_RENDERBUFFER_OES fromDrawable:(CAEAGLLayer *)self.layer];
+    glGetRenderbufferParameterivOES(GL_RENDERBUFFER_OES, GL_RENDERBUFFER_WIDTH_OES, &_framebufferWidth);
+    glGetRenderbufferParameterivOES(GL_RENDERBUFFER_OES, GL_RENDERBUFFER_HEIGHT_OES, &_framebufferHeight);
     
     //set up depth buffer
-    glGenRenderbuffers(1, &_depthRenderbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, self.depthRenderbuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, self.framebufferWidth, self.framebufferHeight);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, self.depthRenderbuffer);
+    glGenRenderbuffersOES(1, &_depthRenderbuffer);
+    glBindRenderbufferOES(GL_RENDERBUFFER_OES, self.depthRenderbuffer);
+    glRenderbufferStorageOES(GL_RENDERBUFFER_OES, GL_DEPTH_COMPONENT16_OES, self.framebufferWidth, self.framebufferHeight);
+    glFramebufferRenderbufferOES(GL_FRAMEBUFFER_OES, GL_DEPTH_ATTACHMENT_OES, GL_RENDERBUFFER_OES, self.depthRenderbuffer);
     
     //check success
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    if (glCheckFramebufferStatusOES(GL_FRAMEBUFFER_OES) != GL_FRAMEBUFFER_COMPLETE_OES)
     {
-        NSLog(@"Failed to make complete framebuffer object %x", glCheckFramebufferStatus(GL_FRAMEBUFFER));
+        NSLog(@"Failed to make complete framebuffer object %x", glCheckFramebufferStatusOES(GL_FRAMEBUFFER_OES));
     }
 }
 
@@ -295,19 +300,19 @@
     
     if (_defaultFramebuffer)
     {
-        glDeleteFramebuffers(1, &_defaultFramebuffer);
+        glDeleteFramebuffersOES(1, &_defaultFramebuffer);
         self.defaultFramebuffer = 0;
     }
     
     if (_colorRenderbuffer)
     {
-        glDeleteRenderbuffers(1, &_colorRenderbuffer);
+        glDeleteRenderbuffersOES(1, &_colorRenderbuffer);
         self.colorRenderbuffer = 0;
     }
     
     if (_depthRenderbuffer)
     {
-        glDeleteRenderbuffers(1, &_depthRenderbuffer);
+        glDeleteRenderbuffersOES(1, &_depthRenderbuffer);
         self.depthRenderbuffer = 0;
     }
 }
@@ -316,7 +321,7 @@
 {
     [EAGLContext setCurrentContext:self.context];
     
-    glBindFramebuffer(GL_FRAMEBUFFER, self.defaultFramebuffer);
+    glBindFramebufferOES(GL_FRAMEBUFFER_OES, self.defaultFramebuffer);
 	glViewport(0, 0, _framebufferWidth, self.framebufferHeight);
 	
     glMatrixMode(GL_PROJECTION);
@@ -346,8 +351,8 @@
 {
     [EAGLContext setCurrentContext:self.context];
     
-    glBindRenderbuffer(GL_RENDERBUFFER, self.colorRenderbuffer);
-    return [self.context presentRenderbuffer:GL_RENDERBUFFER];
+    glBindRenderbufferOES(GL_RENDERBUFFER_OES, self.colorRenderbuffer);
+    return [self.context presentRenderbuffer:GL_RENDERBUFFER_OES];
 }
 
 - (void)display
@@ -355,7 +360,7 @@
     [self.layer display];
 }
 
-- (void)drawRect:(CGRect)rect
+- (void)drawRect:(__unused CGRect)rect
 {
     //override this
 }
@@ -434,7 +439,7 @@
     }
 }
 
-- (void)step:(NSTimeInterval)dt
+- (void)step:(__unused NSTimeInterval)dt
 {
 	//override this
 }

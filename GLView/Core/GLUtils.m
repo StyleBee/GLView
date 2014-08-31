@@ -2,7 +2,7 @@
 //  GLUtils.m
 //
 //  GLView Project
-//  Version 1.5.1
+//  Version 1.6.1
 //
 //  Created by Nick Lockwood on 04/06/2012.
 //  Copyright 2011 Charcoal Design
@@ -41,20 +41,36 @@
 #endif
 
 
+#pragma GCC diagnostic ignored "-Wobjc-missing-property-synthesis"
+#pragma GCC diagnostic ignored "-Wdirect-ivar-access"
+#pragma GCC diagnostic ignored "-Wgnu"
+
+
 #pragma mark-
 #pragma mark Public utils
 
 
 void CGRectGetGLCoords(CGRect rect, GLfloat *coords)
 {
-    coords[0] = rect.origin.x;
-    coords[1] = rect.origin.y;
-    coords[2] = rect.origin.x + rect.size.width;
-    coords[3] = rect.origin.y;
-    coords[4] = rect.origin.x + rect.size.width;
-    coords[5] = rect.origin.y + rect.size.height;
-    coords[6] = rect.origin.x;
-    coords[7] = rect.origin.y + rect.size.height;
+    coords[0] = (GLfloat)rect.origin.x;
+    coords[1] = (GLfloat)rect.origin.y;
+    coords[2] = (GLfloat)(rect.origin.x + rect.size.width);
+    coords[3] = (GLfloat)rect.origin.y;
+    coords[4] = (GLfloat)(rect.origin.x + rect.size.width);
+    coords[5] = (GLfloat)(rect.origin.y + rect.size.height);
+    coords[6] = (GLfloat)rect.origin.x;
+    coords[7] = (GLfloat)(rect.origin.y + rect.size.height);
+}
+
+
+void GLLoadCATransform3D(CATransform3D transform)
+{
+    GLfloat matrix[16];
+    for (int i = 0; i < 16; i++)
+    {
+        matrix[i] = (GLfloat)((CGFloat *)&transform)[i];
+    }
+    glLoadMatrixf(matrix);
 }
 
 
@@ -68,21 +84,26 @@ void CGRectGetGLCoords(CGRect rect, GLfloat *coords)
     {
         case kCGColorSpaceModelMonochrome:
         {
-            rgba[0] = components[0];
-            rgba[1] = components[0];
-            rgba[2] = components[0];
-            rgba[3] = components[1];
+            rgba[0] = (GLfloat)components[0];
+            rgba[1] = (GLfloat)components[0];
+            rgba[2] = (GLfloat)components[0];
+            rgba[3] = (GLfloat)components[1];
             break;
         }
         case kCGColorSpaceModelRGB:
         {
-            rgba[0] = components[0];
-            rgba[1] = components[1];
-            rgba[2] = components[2];
-            rgba[3] = components[3];
+            rgba[0] = (GLfloat)components[0];
+            rgba[1] = (GLfloat)components[1];
+            rgba[2] = (GLfloat)components[2];
+            rgba[3] = (GLfloat)components[3];
             break;
         }
-        default:
+        case kCGColorSpaceModelCMYK:
+        case kCGColorSpaceModelDeviceN:
+        case kCGColorSpaceModelIndexed:
+        case kCGColorSpaceModelLab:
+        case kCGColorSpaceModelPattern:
+        case kCGColorSpaceModelUnknown:
         {
             
 #ifdef DEBUG
@@ -104,13 +125,6 @@ void CGRectGetGLCoords(CGRect rect, GLfloat *coords)
     GLfloat rgba[4];
     [self getGLComponents:rgba];
     glClearColor(rgba[0] * rgba[3], rgba[1] * rgba[3], rgba[2] * rgba[3], rgba[3]);
-}
-
-- (void)bindGLBlendColor
-{    
-    GLfloat rgba[4];
-    [self getGLComponents:rgba];
-    glBlendColor(rgba[0], rgba[1], rgba[2], rgba[3]);
 }
 
 - (void)bindGLColor
@@ -151,6 +165,20 @@ void CGRectGetGLCoords(CGRect rect, GLfloat *coords)
         }
     }
     return self;
+}
+
+@end
+
+
+@implementation NSDictionary (GL)
+
++ (NSDictionary *)GL_dictionaryWithData:(NSData *)data
+{
+    //attempt to unzip data
+    data = [data GL_unzippedData];
+    
+    //deserialize
+    return data? [NSPropertyListSerialization propertyListWithData:data options:0 format:NULL error:NULL]: nil;
 }
 
 @end
@@ -199,6 +227,23 @@ void CGRectGetGLCoords(CGRect rect, GLfloat *coords)
     return NO;
 }
 
+- (NSString *)GL_stringByDeletingRetinaSuffix
+{
+    SEL selector = NSSelectorFromString(@"stringByDeletingRetinaSuffix");
+    if ([self respondsToSelector:selector])
+    {
+        return [self valueForKey:@"stringByDeletingRetinaSuffix"];
+    }
+    NSString *result = [self stringByDeletingPathExtension];
+    if ([result hasSuffix:@"@2x"])
+    {
+        //TODO: handle ~ipad/~iphone
+        result = [result substringToIndex:[result length] - 3];
+        return [result stringByAppendingPathExtension:[self pathExtension]];
+    }
+    return self;
+}
+
 - (NSString *)GL_normalizedPathWithDefaultExtension:(NSString *)extension
 {
     //extension
@@ -217,7 +262,7 @@ void CGRectGetGLCoords(CGRect rect, GLfloat *coords)
     NSFileManager *fileManager = [NSFileManager defaultManager];
     if ([fileManager respondsToSelector:normalizedPathSelector])
     {
-        return objc_msgSend(fileManager, normalizedPathSelector, path);
+        return ((id (*)(id, SEL, id))objc_msgSend)(fileManager, normalizedPathSelector, path);
     }
     
     //convert to absolute path

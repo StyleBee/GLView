@@ -2,7 +2,7 @@
 //  GLLight.m
 //
 //  GLView Project
-//  Version 1.5.1
+//  Version 1.6.1
 //
 //  Created by Nick Lockwood on 17/05/2012.
 //  Copyright 2011 Charcoal Design
@@ -32,6 +32,11 @@
 //
 
 #import "GLLight.h"
+
+
+#pragma GCC diagnostic ignored "-Wobjc-missing-property-synthesis"
+#pragma GCC diagnostic ignored "-Wdirect-ivar-access"
+#pragma GCC diagnostic ignored "-Wgnu"
 
 
 @implementation GLLight
@@ -65,7 +70,13 @@
     glLightfv(light, GL_SPECULAR, color);
     
     //set position
-    GLfloat position[4] = {self.transform.m41, self.transform.m42, self.transform.m43, self.transform.m44};
+    GLfloat position[4] =
+    {
+        (GLfloat)self.transform.m41,
+        (GLfloat)self.transform.m42,
+        (GLfloat)self.transform.m43,
+        (GLfloat)self.transform.m44
+    };
     glLightfv(light, GL_POSITION, position);
 }
 

@@ -13,7 +13,7 @@ The GLView library is modular. If you don't want to render 3D models you can omi
 Supported OS & SDK Versions
 -----------------------------
 
-* Supported build target - iOS 6.1 (Xcode 4.6.2, Apple LLVM compiler 4.2)
+* Supported build target - iOS 8.0 (Xcode 6.0, Apple LLVM compiler 6.0)
 * Earliest supported deployment target - iOS 5.0
 * Earliest compatible deployment target - iOS 4.3
 
@@ -191,6 +191,15 @@ The content rectangle used to specify the portion of the image which is textured
 
 Images that have translucent parts can either use premultiplied or non-premultiplied alpha. iOS typically uses premultiplied alpha when loading images and this is the default for non-PVR images. PVR images generated using Apple's command-line tools do not have premultiplied alpha, so for PVR images it is assumed that the image does not have premultiplied alpha so this property will be NO for PVR images by default, however some tools have the option to generate PVR images with premultiplied alpha, and this is generally recommended to avoid odd black or white halos around opaque parts of the image. There is no way to detect if a PVR image was generated with premultiplied alpha, so if you know that it was, or if the image looks wrong when rendered, you can toggle this property using the `imageWithPremultipliedAlpha:` method. See the Premultiplied Alpha section below for more details.
 
+    @property (nonatomic, readonly) GLBlendMode blendMode;
+    
+The blendMode property determines how the image will be blended with the existing onscreen content when drawn. You can change this property using the `imageWithBlendMode:` method. This property is of type GLBlendMode, which has the following possible values:
+
+* GLBlendModeNormal - This is the default blend mode, and behaves like ordinary alpha blending.
+* GLBlendModeMultiply - This works like the multiply blend mode in Photoshop - the colors are mutliplied together
+* GLBlendModeAdd - This works like the Linear Dodge blend mode in Photoshop - good for creating glowing images
+* GLBlendModeScreen - This works like the Screen blend mode in Photoshop - the underlying color is lightened
+
     @property (nonatomic, readonly) const GLfloat *textureCoords;
 
 The texture coordinates used for rendering the image. These are handy if you need to render the image yourself using OpenGL functions instead of using the `drawAtPoint:` or `drawInRect:` methods. The textureCoords array will always contain exactly 8 GLfloat values.
@@ -235,6 +244,10 @@ These methods allow you to create a GLImage from an NSData object. The data cont
     
 Images that have translucent parts can either use premultiplied or non-premultiplied alpha. iOS typically uses premultiplied alpha when loading images and this is the default for non-PVR images. PVR images generated using Apple's command-line tools do not have premultiplied alpha, so for PVR images it is assumed that the image does not have premultiplied alpha. Some tools however have the option to generate PVR images with premultiplied alpha, and this is generally recommended to avoid odd black or white halos around opaque parts of the image, but since there is no way to detect this from the file format, these images may render incorrectly when loaded with GLImage. To correct this, use this method with a value of YES to create a version of the image that will render correctly. See the Premultiplied Alpha section below for more details.
 
+    - (GLImage *)imageWithBlendMode:(GLBlendMode)blendMode;
+
+This method can be used to create a copy of the image that uses a different blend mode. For details of the different blend modes available, check the blendMode property description above.
+
     - (GLImage *)imageWithOrientation:(UIImageOrientation)orientation;
 
 If your image is flipped or was rotated to fit into a larger image map, you can change the orientation at which it is displayed by updating the orientation with this method. This method doesn't change the image pixels, it only affects the way in which it is displayed by the `drawAtPoint:` and `drawInRect:` methods.
@@ -276,7 +289,7 @@ The GLImageMap class has the following methods:
     + (GLImageMap *)imageMapWithContentsOfFile:(NSString *)nameOrPath;
     - (GLImageMap *)initWithContentsOfFile:(NSString *)nameOrPath;
     
-These methods are used to create a GLImageMap from a file. The parameter can be an absolute or relative file path (relative paths are assumed to be inside the application bundle). If the file extension is omitted it is assumed to be .plist. Currently the only image map file format that is supported is the Cocos2D sprite map format, which can be exported by tools such as Zwoptex or TexturePacker. GLImageMap fully supports trimmed, rotated and aliased images. As with ordinary GLImages, GLImageMap will automatically detect @2x retina files and files with the ~ipad suffix.
+These methods are used to create a GLImageMap from a file. The parameter can be an absolute or relative file path (relative paths are assumed to be inside the application bundle). If the file extension is omitted it is assumed to be and Xcode 5 .atlasc file (see "Using Xcode 5 / SpriteKit texture atlasses" below), or a .plist. Currently the only image map file formats that are supported are the Xcode 5 / SpriteKit texture atlas format, and the Cocos2D sprite map format, which can be exported by tools such as Zwoptex or TexturePacker. GLImageMap fully supports rotated and trimmed images, as well as image aliases. It will automatically detect @2x Retina imagemap files and files with the ~ipad suffix.
 
     + (GLImageMap *)imageMapWithImage:(GLImage *)image data:(NSData *)data;    
     - (GLImageMap *)initWithImage:(GLImage *)image data:(NSData *)data;
@@ -289,15 +302,17 @@ This method returns the number of images in the image map.
     
     - (NSString *)imageNameAtIndex:(NSInteger)index;
     
-This method returns the image name at the specified index. Note that image map images are unordered, so do not assume that the image order will match the order of images in the file that was loaded. If you wish to access image map images in a specific order, it is a good idea to name them numerically.
+This method returns the image name at the specified index. Image names are sorted alphabetically, and do not necessarily reflect the order in which they appear in the sprite sheet file.
     
     - (GLImage *)imageAtIndex:(NSInteger)index;
+    - (GLImage *)objectAtIndexedSubscript:(NSInteger)index;
     
-This method returns the image map image at the specified index. Note that image map images are unordered, so do not assume that the image order will match the order of images in the file that was loaded. If you wish to access image map images in a specific order, it is a good idea to name them numerically.
+These methods return the image map image at the specified index. Both methods behave the same way, but the second is included to support object subscripting, allowing the sprite to be accessed using the `spritemap[index]` syntax. Image map images are sorted alphabetically, and do not neccesarily reflect the order in which they appear in the sprite sheet file. If you wish to access the images in a specific order, it is a good idea to name them numerically, padded to the same length with zeros.
     
     - (GLImage *)imageNamed:(NSString *)name;
+    - (GLImage *)objectForKeyedSubscript:(NSString *)name;
     
-This method returns the image map image with the specified name. Depending on the tool used to generate the image map data file, the names may include a file extension. If you do not include a file extension in the image name, png is assumed.
+These methods return the image map image with the specified name. Both methods behave the same way, but the second is included to support object subscripting, allowing the sprite to be accessed using the `spritemap[@"spriteName"]` syntax. Depending on the tool used to generate the image map data file, the name may include a file extension. If you do not include a file extension in the name parameter, png is assumed.
 
 
 GLImageView properties
@@ -458,27 +473,27 @@ Generating PVR image files
 
 GLImage can load PVR images, which are a special format used by iOS graphics chips that is extremely memory efficient and fast to load. Often, images that you would have to load using a background thread if they were PNG or JPEG format in order to avoid blocking the UI can be loaded in real time on the main thread with no performance impact if you use PVR format instead.
 
-To generate PVR images, your best option is to use the Imagination PVRTexTool, which you can download as part of the PVR SDK from here: http://www.imgtec.com/powervr/insider/sdkdownloads/
+To generate PVR images, your best option is to use the Imagination PVRTexTool, which you can download as part of the PVR SDK from here: http://community.imgtec.com/developers/powervr/installers/
 
-The SDK is free to download (though registration is reauired) and includes a fairly easy-to-use GUI tool, and a very powerful command-line tool. The PVRTexTool can be used to batch convert a PNG images to PVR in all known formats.
+The SDK is free to download (though registration is required) and includes a fairly easy-to-use GUI tool, and a very powerful command-line tool. The PVRTexTool can be used to batch convert a PNG images to PVR in all known formats.
 
 **NOTE:** In addition to needing power-of-two dimensions, PVR images must also be perfectly square, i.e. the width and height must be equal. Valid sizes are 2x2, 4x4, 8x8, 16x16, 32x32, 64x64, 128x128, 256x256, etc. Remember to crop or scale your images to a valid size before converting them.
 
 Once installed, you can find the command-line PVRTexTool at:
 
-    /Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/CL/OSX_x86/PVRTexToolCL
+    /Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/CLI/OSX_x86/PVRTexToolCLI
 
 GLImage currently only supports the legacy PVR version 2 texture format. The PVRTexTool supports this using the -legacypvr option. If your image contains transparency, you will also want to enable premultiplied alpha using the -p option.
 
 Typical texturetool settings you might want to use are:
 
-    /Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/CL/OSX_x86/PVRTexToolCL -i {input_file_name}.png -o {output_file_name}.pvr -legacypvr -p -l -f PVRTC1_4 -q pvrtcbest
+    /Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/CLI/OSX_x86/PVRTexToolCLI -i {input_file_name}.png -o {output_file_name}.pvr -legacypvr -p -l -f PVRTC1_4 -q pvrtcbest
 
 This generates a 4 bpp compressed PVR image with alpha at best available compression quality. This will take several seconds to run, so don't be alarmed.
 
 If you will need to zoom your images, or view them at greatly reduced size in the app, it's a good idea to enable mipmapping in order to improve the quality of the image when drawn at smaller sizes. Mipmapping increases the size of the PVR file on disk and in memory by about 33%, so don't use it if you are only planning to display your images at 100% size or higher. To enable mipmapping, add the -m flag and use the -mfilter flag to specify mipmapping algorithm:
 
-    /Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/CL/OSX_x86/PVRTexToolCL -i {input_file_name}.png -o {output_file_name}.pvr -legacypvr -p -l -m -mfilter cubic -f PVRTC1_4 -q pvrtcbest
+    /Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/CLI/OSX_x86/PVRTexToolCLI -i {input_file_name}.png -o {output_file_name}.pvr -legacypvr -p -l -m -mfilter cubic -f PVRTC1_4 -q pvrtcbest
     
 This generates a 4 bpp compressed PVR image with alpha and mipmaps.
 
@@ -495,7 +510,7 @@ As stated previously, these files will appear like compressed JPEG images, and m
     
 To batch convert a folder of images, just CD to the directory containing your images then run the following command:
 
-    find ./ -name \*.png | sed 's/\.png//g' | \ xargs -I % -n 1 /Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/CL/OSX_x86/PVRTexToolCL -i %.png -o %.pvr -legacypvr -p -l -m -mfilter cubic -f PVRTC1_4 -q pvrtcbest
+    find ./ -name \*.png | sed 's/\.png//g' | \ xargs -I % -n 1 /Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/CLI/OSX_x86/PVRTexToolCLI -i %.png -o %.pvr -legacypvr -p -l -m -mfilter cubic -f PVRTC1_4 -q pvrtcbest
     
 This will apply the PVRTexTool command to each file in the folder in turn.
     
@@ -513,7 +528,7 @@ To use the GLImageView as a PVR video player, you'll need to convert your video 
 
 4) Now that you have the individual frames, you'll need to convert them to PVRs. Use the batch conversion technique listed above (you may wish to tweak the format, quality, etc. depending on whether your movie has transparency):
 
-	find ./ -name \*.png | sed 's/\.png//g' | \ xargs -I % -n 1 /Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/CL/OSX_x86/PVRTexToolCL -i %.png -o %.pvr -legacypvr -p -l -f PVRTC1_4 -q pvrtcbest
+	find ./ -name \*.png | sed 's/\.png//g' | \ xargs -I % -n 1 /Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/CLI/OSX_x86/PVRTexToolCLI -i %.png -o %.pvr -legacypvr -p -l -f PVRTC1_4 -q pvrtcbest
 	
 This generates the frames as 4 bpp compressed PVR images with alpha (this will take a very long time, you may want to get a coffee). Since the individual image frames will still be quite large, you may now wish to gzip them by running:
 
@@ -549,4 +564,21 @@ When using PVR images, straight alpha can result in a one-pixel black or white h
 
 At present, there's no way to automatically detect the type of alpha when loading a PVR image, so if you have generated your PVRs with straight alpha, GLImage will still assume they are premultiplied, which will make them look even worse when they are displayed. To correct this, call `[image imageWithPremultipliedAlpha:NO]` on the image after loading it to create a copy that will treat the image as having straight alpha instead.
 
-The Cocos2D Plist file format supported by GLImageMap includes metadata indicating whether the texture file has premultiplied alpha or not, so no further work is needed when loading sprite sheets with GLImageMap.
+The sprite sheet formats supported by GLImageMap include metadata indicating whether the texture file has premultiplied alpha or not, so no further work is needed when loading sprite sheets with GLImageMap.
+
+
+Using Xcode 5 / SpriteKit texture atlases
+---------------------------------------------
+
+The GLView library can load sprites stored in the Xcode 5 / SpriteKit texture atlas format. To use a texture atlas, first create a folder containing all of your sprite images (both standard and @2x variants) with the extension .atlas, and add it to your project.
+
+Then, in your project build settings, search for "SpriteKit" and set the "Enable Texture Atlas Generation" option (this may appear as SPRITEKIT_TEXTURE_ATLAS_OUTPUT if you have not  yet imported the atlas), with the default "Output Texture Atlas Format" of "RGBA8888_PNG" (GLView does not currently support any of Xcode's compressed texture formats).
+
+There is no need to import the SpriteKit framework. When importing your sprite sheet using the GLImageMap +imageMapWithContentsOfFile method, either specify the file extension "atlasc" (note the "c"), or leave off the path extension and GLImageMap will automatically find the atlas file if available.
+
+You will need to use Xcode 5 or above to generate the atlas files, but they can be loaded and used by GLImageMap for apps running on iOS 4.3 and above - they are not limited to iOS 7.
+
+
+Release notes
+--------------
+
